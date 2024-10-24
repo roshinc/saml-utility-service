@@ -3,7 +3,6 @@ package dev.roshin.saml.rest.resources;
 
 import dev.roshin.saml.processing.SamlProcessor;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -13,7 +12,7 @@ import jakarta.ws.rs.core.Response;
 @RequestScoped
 public class SamlAssertionService {
 
-    @Inject
+    //@Inject
     private SamlProcessor samlProcessor;  // Assuming a SAML processing class exists to handle logic
 
     @POST
