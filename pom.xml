@@ -40,6 +40,23 @@
             <version>2.11.0</version>
         </dependency>
 
+        <!-- Guava -->
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.3.1-jre</version>
+        </dependency>
+
+
+        <!-- Apache HttpClient -->
+        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.4</version>
+        </dependency>
+
 
         <!-- Add the dependencies for the SAML utility service -->
         <!-- https://mvnrepository.com/artifact/org.opensaml/opensaml-saml-impl -->
@@ -73,7 +90,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.16</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- JUnit 5 -->
