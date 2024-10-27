@@ -1,6 +1,7 @@
 package dev.roshin.saml.rest.resources;
 
-import dev.roshin.saml.services.config.ConfigService;
+import dev.roshin.saml.services.config.ConfigManager;
+import dev.roshin.saml.services.config.records.ConfigData;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -12,12 +13,20 @@ import jakarta.ws.rs.core.MediaType;
 @RequestScoped
 public class ConfigResource {
 
+
     @Inject
-    private ConfigService configService;
+    private ConfigManager configManager;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public ConfigService.ConfigData getConfig() {
-        return configService.getConfigData();
+    public ConfigData getConfig() {
+        return configManager.getConfigData();
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/clearCache")
+    public void clearConfigCache() {
+        configManager.clearCache();
     }
 }
