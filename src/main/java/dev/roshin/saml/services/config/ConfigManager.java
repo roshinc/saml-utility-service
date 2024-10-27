@@ -120,7 +120,7 @@ public class ConfigManager {
      */
     private void validateInitialConfiguration() {
         try {
-            ConfigData initialConfig = fetchConfigurations();
+            ConfigData initialConfig = this.getConfigData();
             if (initialConfig == null ||
                     initialConfig.generalConfig() == null ||
                     initialConfig.providerConfigs() == null) {
