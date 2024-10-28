@@ -1,7 +1,6 @@
 package dev.roshin.saml.keystore;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import dev.roshin.saml.domain.CertificateInfo;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -96,28 +95,63 @@ class KeystoreHolderTest {
     @Test
     public void testMetadata() throws Exception {
         KeystoreHolder keystoreObject = new KeystoreHolder(keystorePath, KEYSTORE_PASSWORD, KEY_ALIAS);
-        JsonObject metadata = keystoreObject.getMetadata();
+        CertificateInfo metadata = keystoreObject.getMetadata();
 
         assertAll("Metadata validation",
                 () -> assertNotNull(metadata, "Metadata should not be null"),
-                () -> assertEquals(keystorePath.toString(), metadata.get("keystorePath").getAsString(), "Should contain correct path"),
-                () -> assertEquals(KEY_ALIAS, metadata.get("primaryAlias").getAsString(), "Should contain correct alias"),
-                () -> assertTrue(metadata.has("certificates"), "Should contain certificates array"),
+                () -> assertEquals(keystorePath.toString(), metadata.keystorePath(), "Should contain correct path"),
+                () -> assertEquals(KEY_ALIAS, metadata.primaryAlias(), "Should contain correct alias"),
+                () -> assertNotNull(metadata.certificates(), "Should contain certificates list"),
+                () -> assertFalse(metadata.certificates().isEmpty(), "Should contain at least one certificate"),
                 () -> {
-                    JsonArray certs = metadata.getAsJsonArray("certificates");
-                    assertFalse(certs.isEmpty(), "Should contain at least one certificate");
-                    JsonObject firstCert = certs.get(0).getAsJsonObject();
+                    var firstCert = metadata.certificates().get(0);
                     assertAll("Certificate metadata",
-                            () -> assertTrue(firstCert.has("alias"), "Should have alias"),
-                            () -> assertTrue(firstCert.has("subject"), "Should have subject"),
-                            () -> assertTrue(firstCert.has("issuer"), "Should have issuer"),
-                            () -> assertTrue(firstCert.has("validFrom"), "Should have validFrom"),
-                            () -> assertTrue(firstCert.has("validUntil"), "Should have validUntil")
+                            () -> assertNotNull(firstCert.alias(), "Should have alias"),
+                            () -> assertNotNull(firstCert.subject(), "Should have subject"),
+                            () -> assertNotNull(firstCert.issuer(), "Should have issuer"),
+                            () -> assertNotNull(firstCert.validFrom(), "Should have validFrom"),
+                            () -> assertNotNull(firstCert.validUntil(), "Should have validUntil"),
+                            () -> assertNotNull(firstCert.serialNumber(), "Should have serialNumber")
                     );
-                }
+                },
+                () -> {
+                    // Verify primary certificate is marked correctly
+                    boolean hasPrimaryCert = metadata.certificates().stream()
+                            .anyMatch(cert -> cert.isPrimary() && cert.alias().equals(KEY_ALIAS));
+                    assertTrue(hasPrimaryCert, "Should have primary certificate marked");
+                },
+                () -> assertEquals("JKS", metadata.type(), "Should be JKS type"),
+                () -> assertTrue(metadata.size() > 0, "Should have positive size")
         );
 
-        System.out.println(metadata);
+        // Print formatted metadata for debugging
+        System.out.println("Keystore Metadata:");
+        System.out.printf("Path: %s%n", metadata.keystorePath());
+        System.out.printf("Name: %s%n", metadata.keystoreName());
+        System.out.printf("Primary Alias: %s%n", metadata.primaryAlias());
+        System.out.printf("Type: %s%n", metadata.type());
+        System.out.printf("Size: %d%n", metadata.size());
+        System.out.println("Certificates:");
+        metadata.certificates().forEach(cert ->
+                System.out.printf("""
+                                
+                                - Alias: %s
+                                  Subject: %s
+                                  Issuer: %s
+                                  Serial: %s
+                                  Valid From: %s
+                                  Valid Until: %s
+                                  Is Primary: %s
+                                """,
+                        cert.alias(),
+                        cert.subject(),
+                        cert.issuer(),
+                        cert.serialNumber(),
+                        cert.validFrom(),
+                        cert.validUntil(),
+                        cert.isPrimary()
+                )
+        );
     }
 
     @Test

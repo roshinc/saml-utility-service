@@ -1,7 +1,7 @@
 package dev.roshin.saml.keystore;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import dev.roshin.saml.domain.CertificateInfo;
+import dev.roshin.saml.domain.KeystoreMetadataException;
 import org.opensaml.security.x509.BasicX509Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,9 @@ import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Class representing a Java KeyStore (JKS) that manages X.509 credentials.
@@ -145,40 +147,64 @@ public class KeystoreHolder {
     }
 
     /**
-     * Creates a JSON object containing metadata about all certificates in the keystore.
+     * Creates a CertificateInfo object containing metadata about all certificates in the keystore.
      *
-     * @return JsonObject containing certificate metadata
-     * @throws KeyStoreException If metadata retrieval fails
+     * @return CertificateInfo containing certificate metadata
+     * @throws Exception If metadata retrieval fails
      */
-    public JsonObject getMetadata() throws KeyStoreException {
-        JsonObject metadata = new JsonObject();
-        metadata.addProperty("keystorePath", keystorePath.toString());
-        metadata.addProperty("keystoreName", getKeystoreName());
-        metadata.addProperty("primaryAlias", keyAlias);
-        metadata.addProperty("type", keystore.getType());
-        metadata.addProperty("size", keystore.size());
+    public CertificateInfo getMetadata() throws Exception {
+        logger.debug("Retrieving metadata for keystore: {}", keystorePath);
 
-        JsonArray certificates = new JsonArray();
-        Enumeration<String> aliases = keystore.aliases();
-        while (aliases.hasMoreElements()) {
-            String alias = aliases.nextElement();
-            Certificate cert = keystore.getCertificate(alias);
-            if (cert instanceof X509Certificate) {
-                X509Certificate x509Cert = (X509Certificate) cert;
-                JsonObject certInfo = new JsonObject();
-                certInfo.addProperty("alias", alias);
-                certInfo.addProperty("subject", x509Cert.getSubjectX500Principal().getName());
-                certInfo.addProperty("issuer", x509Cert.getIssuerX500Principal().getName());
-                certInfo.addProperty("serialNumber", x509Cert.getSerialNumber().toString());
-                certInfo.addProperty("validFrom", x509Cert.getNotBefore().toString());
-                certInfo.addProperty("validUntil", x509Cert.getNotAfter().toString());
-                certInfo.addProperty("isPrimary", alias.equals(keyAlias));
-                certificates.add(certInfo);
+        List<CertificateInfo.CertificateDetails> certificateDetails = new ArrayList<>();
+
+        try {
+            Enumeration<String> aliases = keystore.aliases();
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                Certificate cert = keystore.getCertificate(alias);
+
+                if (cert instanceof X509Certificate) {
+                    X509Certificate x509Cert = (X509Certificate) cert;
+                    certificateDetails.add(extractCertificateDetails(x509Cert, alias));
+                    logger.trace("Added certificate details for alias: {}", alias);
+                }
             }
-        }
-        metadata.add("certificates", certificates);
 
-        return metadata;
+            CertificateInfo info = new CertificateInfo(
+                    keystorePath.toString(),
+                    getKeystoreName(),
+                    keyAlias,
+                    keystore.getType(),
+                    keystore.size(),
+                    certificateDetails
+            );
+
+            logger.debug("Successfully retrieved metadata for keystore: {}", keystorePath);
+            return info;
+
+        } catch (Exception e) {
+            logger.error("Failed to retrieve keystore metadata for path: {}", keystorePath, e);
+            throw new KeystoreMetadataException("Failed to retrieve keystore metadata", e);
+        }
+    }
+
+    /**
+     * Extracts details from an X509Certificate into a CertificateDetails record.
+     *
+     * @param cert  The X509Certificate to extract details from
+     * @param alias The alias of the certificate
+     * @return CertificateDetails containing the extracted information
+     */
+    private CertificateInfo.CertificateDetails extractCertificateDetails(X509Certificate cert, String alias) {
+        return new CertificateInfo.CertificateDetails(
+                alias,
+                cert.getSubjectX500Principal().getName(),
+                cert.getIssuerX500Principal().getName(),
+                cert.getSerialNumber().toString(),
+                cert.getNotBefore().toString(),
+                cert.getNotAfter().toString(),
+                alias.equals(keyAlias)
+        );
     }
 
     @Override
